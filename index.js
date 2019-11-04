@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { execSync } = require('child_process')
+const { exec, execSync } = require('child_process')
 const chokidar = require('chokidar')
 const level = require('level')
 const db = level('./db')
@@ -49,7 +49,7 @@ const update = async (filename) => {
 	for (let i = 0; i < lst.length; i++) {
 		if (lst[i].startsWith('# ')) {
 			if (date) {
-				db.put(date, s)
+				await db.put(date, s)
 				// console.log(date)
 			}
 			s = lst[i] + lineBreak
@@ -60,7 +60,7 @@ const update = async (filename) => {
 		else if (lst[i] === emptyComment) { }
 		else s += lst[i] + lineBreak
 	}
-	db.put(date, s)
+	await db.put(date, s)
 	// console.log(date)
 }
 const startService = async () => {
@@ -69,17 +69,20 @@ const startService = async () => {
 	watcher.on('change', (filename, stat) => {
 		update(filename)
 	})
-	process.on('SIGINT', () => {
-		update(filename).then(async () => {
-			await genFile(undefined, undefined, 'notes/notes.md')
-			await db.close()
-			const opt = {
-				cwd: './notes'
-			}
-			execSync('git add .', opt)
-			execSync(`git commit -m "${new Date()}"`, opt)
-			process.exit()
-		})
+	process.on('SIGINT', async () => {
+		await update(filename)
+		await genFile(undefined, undefined, 'notes/notes.md')
+		// await db.close()
+		const opt = {
+			cwd: './notes'
+		}
+		// execSync('git add .', opt)
+		// execSync(`git commit -m "${new Date()}"`, opt)
+		exec('git add .', opt, () => {
+			exec(`git commit -m "${new Date()}"`, opt, () => {
+				process.exit()
+			}).stderr.pipe(process.stderr)
+		}).stderr.pipe(process.stderr)
 	})
 }
 if (process.argv.indexOf('gen') === -1) {
