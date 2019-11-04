@@ -11,7 +11,7 @@ const getLst = () => {
 		const lst = []
 		const stream = db.createKeyStream()
 		stream.on('data', d => lst.push(d))
-		stream.on('end', async () => {
+		stream.on('end', () => {
 			res(lst)
 		})
 	})
