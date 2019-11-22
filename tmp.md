@@ -331,3 +331,4 @@ $$
 \end{aligned}
 $$
 <!--  -->
+$\gdef{\dif}{\mathop{}\!\mathrm{d}}$

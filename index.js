@@ -5,6 +5,9 @@ const level = require('level')
 const db = level('./db')
 const lineBreak = '\r\n'
 const emptyComment = '<!--  -->'
+const defs = [
+	'$\\gdef{\\dif}{\\mathop{}\\!\\mathrm{d}}$'
+]
 const filename = './tmp.md'
 const getLst = () => {
 	return new Promise((res, rej) => {
@@ -39,17 +42,23 @@ const genFile = async (l, r, file = filename) => {
 	for (let x of lst.slice(l, r)) {
 		s += await db.get(x)
 	}
-	fs.writeFileSync(file, s + emptyComment)
+	fs.writeFileSync(file, s + emptyComment + '\n' + defs.join('\n'))
 }
 const update = async (filename) => {
 	const fileContent = fs.readFileSync(filename).toString()
 	if (!fileContent) return
 	const lst = fileContent.split(lineBreak)
 	var s = '', date = null
+	const ops = []
 	for (let i = 0; i < lst.length; i++) {
 		if (lst[i].startsWith('# ')) {
 			if (date) {
-				await db.put(date, s)
+				// await db.put(date, s)
+				ops.push({
+					type: 'put',
+					key: date,
+					value: s
+				})
 				// console.log(date)
 			}
 			s = lst[i] + lineBreak
@@ -58,9 +67,15 @@ const update = async (filename) => {
 			date = a.map(x => x.toString().padStart(2, '0')).join('')
 		}
 		else if (lst[i] === emptyComment) { }
+		else if (defs.indexOf(lst[i]) !== -1) { }
 		else s += lst[i] + lineBreak
 	}
-	await db.put(date, s)
+	ops.push({
+		type: 'put',
+		key: date,
+		value: s
+	})
+	await db.batch(ops)
 	// console.log(date)
 }
 const startService = async () => {
@@ -71,7 +86,12 @@ const startService = async () => {
 	})
 	process.on('SIGINT', async () => {
 		await update(filename)
-		await genFile(undefined, undefined, 'notes/notes.md')
+		try {
+			await genFile(undefined, undefined, 'notes/notes.md')
+		}
+		catch (e) {
+			console.log(e)
+		}
 		// await db.close()
 		const opt = {
 			cwd: './notes'
