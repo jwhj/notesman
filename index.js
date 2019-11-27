@@ -42,7 +42,7 @@ const genFile = async (l, r, file = filename) => {
 	for (let x of lst.slice(l, r)) {
 		s += await db.get(x)
 	}
-	fs.writeFileSync(file, s + emptyComment + '\n' + defs.join('\n'))
+	fs.writeFileSync(file, s + emptyComment + lineBreak + defs.join('\n'))
 }
 const update = async (filename) => {
 	const fileContent = fs.readFileSync(filename).toString()
