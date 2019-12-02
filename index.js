@@ -1,9 +1,9 @@
+const os = require('os')
 const fs = require('fs')
 const { exec, execSync } = require('child_process')
 const chokidar = require('chokidar')
 const level = require('level')
 const db = level('./db')
-const lineBreak = '\r\n'
 const emptyComment = '<!--  -->'
 const defs = [
 	'$\\gdef{\\dif}{\\mathop{}\\!\\mathrm{d}}$'
@@ -42,12 +42,12 @@ const genFile = async (l, r, file = filename) => {
 	for (let x of lst.slice(l, r)) {
 		s += await db.get(x)
 	}
-	fs.writeFileSync(file, s + emptyComment + lineBreak + defs.join('\n'))
+	fs.writeFileSync(file, s + emptyComment + os.EOL + defs.join('\n'))
 }
 const update = async (filename) => {
 	const fileContent = fs.readFileSync(filename).toString()
 	if (!fileContent) return
-	const lst = fileContent.split(lineBreak)
+	const lst = fileContent.split(os.EOL)
 	var s = '', date = null
 	const ops = []
 	for (let i = 0; i < lst.length; i++) {
@@ -61,14 +61,14 @@ const update = async (filename) => {
 				})
 				// console.log(date)
 			}
-			s = lst[i] + lineBreak
+			s = lst[i] + os.EOL
 			const a = lst[i].slice(2).split('-')
 			// console.log(lst[i])
 			date = a.map(x => x.toString().padStart(2, '0')).join('')
 		}
 		else if (lst[i] === emptyComment) { }
 		else if (defs.indexOf(lst[i]) !== -1) { }
-		else s += lst[i] + lineBreak
+		else s += lst[i] + os.EOL
 	}
 	ops.push({
 		type: 'put',
